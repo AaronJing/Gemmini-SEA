@@ -6,6 +6,7 @@ package gemmini
 import chisel3._
 import chisel3.util._
 import hardfloat._
+import sea_fp_lib._
 
 // Bundles that represent the raw bits of custom datatypes
 case class Float(expWidth: Int, sigWidth: Int) extends Bundle {
@@ -40,6 +41,10 @@ abstract class ArithmeticOps[T <: Data](self: T) {
   def relu: T
   def relu6(shift: UInt): T
   def zero: T
+  def isNeg: Bool
+  def isSameSign(t: Bool): Bool
+  def getBits: UInt
+  def seaMac(approxMul: Boolean, no_round: Boolean, samesigned: Boolean, m1: T, m2: T): T
 }
 
 object Arithmetic {
@@ -81,6 +86,10 @@ object Arithmetic {
 
       override def zero: UInt = 0.U
       override def identity: UInt = 1.U
+      override def isNeg: Bool = false.B
+      override def isSameSign(t: Bool) = true.B
+      override def getBits: UInt = self.asUInt()
+      override def seaMac(approxMul: Boolean, no_round: Boolean, samesigned: Boolean, m1: UInt, m2: UInt) = m1 * m2 + self
     }
   }
 
@@ -131,6 +140,10 @@ object Arithmetic {
 
       override def zero: SInt = 0.S
       override def identity: SInt = 1.S
+      override def isNeg: Bool = self(self.getWidth-1)
+      override def isSameSign(t: Bool) = ~(self(self.getWidth-1)^t)
+      override def getBits: UInt = self.asUInt()
+      override def seaMac(approxMul: Boolean, no_round: Boolean, samesigned: Boolean, m1: SInt, m2: SInt) = m1 * m2 + self
     }
   }
 
@@ -371,6 +384,67 @@ object Arithmetic {
 
       override def zero: Float = 0.U.asTypeOf(self)
       override def identity: Float = Cat(0.U(2.W), ~(0.U((self.expWidth-1).W)), 0.U((self.sigWidth-1).W)).asTypeOf(self)
+      override def isNeg: Bool = self.bits(self.getWidth-1)
+      override def isSameSign(t: Bool): Bool = ~(self.bits(self.expWidth+self.sigWidth-1)^t)
+      override def getBits: UInt = self.asUInt()
+      override def seaMac(approxMul: Boolean, no_round: Boolean, samesigned: Boolean, m1: Float, m2: Float): Float = {
+        // m1 and m2 resizes
+        // 1. FN to RN
+        // 2. resize unit
+        // Recode all operands
+        val m1_rec = recFNFromFN(m1.expWidth, m1.sigWidth, m1.bits)
+        val m2_rec = recFNFromFN(m2.expWidth, m2.sigWidth, m2.bits)
+        val self_rec = recFNFromFN(self.expWidth, self.sigWidth, self.bits)
+
+        // Resize m1 to self's width
+        val m1_resizer = Module(new RecFNToRecFN(m1.expWidth, m1.sigWidth, self.expWidth, self.sigWidth))
+        m1_resizer.io.in := m1_rec
+        m1_resizer.io.roundingMode := consts.round_minMag // consts.round_near_maxMag
+        m1_resizer.io.detectTininess := consts.tininess_afterRounding
+        val m1_rec_resized = m1_resizer.io.out
+        
+        // Resize m2 to self's width
+        val m2_resizer = Module(new RecFNToRecFN(m2.expWidth, m2.sigWidth, self.expWidth, self.sigWidth))
+        m2_resizer.io.in := m2_rec
+        m2_resizer.io.roundingMode := consts.round_minMag
+        m2_resizer.io.detectTininess := consts.tininess_afterRounding
+        val m2_rec_resized = m2_resizer.io.out
+
+        // decides multiplier we are using
+        // 1. accurate mul
+        //  1.1 RN to FN after mul
+        // 2. approx mul
+        //  2.1 RN to FN before mul
+        val mul_out = if (approxMul) { 
+          val m1_fn = fNFromRecFN(self.expWidth, self.sigWidth, m1_rec_resized)
+          val m2_fn = fNFromRecFN(self.expWidth, self.sigWidth, m2_rec_resized)
+          // currently we using Hassaan's MBM
+          val approx_mul = Module(new ApproxMulFN(self.expWidth, self.sigWidth-1, 1))
+          approx_mul.io.a := m1_fn
+          approx_mul.io.b := m2_fn
+          val approxout = approx_mul.io.c
+          approxout
+        } else {
+          val mul = Module(new MulRecFN(self.expWidth, self.sigWidth))
+          mul.io.a := m1_rec_resized
+          mul.io.b := m2_rec_resized
+          mul.io.roundingMode := consts.round_minMag
+          mul.io.detectTininess :=  1.B
+        
+          val out = fNFromRecFN(self.expWidth, self.sigWidth, mul.io.out)
+          out
+        }
+
+        // addition
+        val adder = Module(new FPadder(self.expWidth, self.sigWidth-1, no_round, samesigned))
+        adder.io.a := self.bits
+        adder.io.b := mul_out
+        adder.io.op := 0.U
+        adder.io.round := 0.U //dont touch
+        val result = Wire(Float(self.expWidth, self.sigWidth))
+        result.bits := adder.io.o
+        result
+      }
     }
   }
 
@@ -387,6 +461,10 @@ object Arithmetic {
       override def relu = self.dontCare
       override def relu6(shift: UInt) = self.dontCare
       override def zero = self.dontCare
+      override def isNeg: Bool = false.B
+      override def isSameSign(t: Bool): Bool = false.B
+      override def getBits = 0.U 
+      override def seaMac(approxMul: Boolean, no_round: Boolean, samesigned: Boolean, m1: DummySInt, m2: DummySInt) = self.dontCare
     }
   }
 }
