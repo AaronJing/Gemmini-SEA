@@ -37,7 +37,7 @@ class Mesh_sea_ws[T <: Data](samesignedadder: Boolean, approx: Boolean, noround:
     val out_last = Output(Vec(meshColumns, Vec(tileColumns, Bool())))
   })
 
-  val mesh: Seq[Seq[Tile[T]]] = Seq.fill(meshRows, meshColumns)(Module(new Tile(samesignedadder, approx, noround, inputType, outputType, accType, df, tree_reduction, max_simultaneous_matmuls, tileRows, tileColumns)))
+  val mesh: Seq[Seq[Tile_sea_ws[T]]] = Seq.fill(meshRows, meshColumns)(Module(new Tile_sea_ws(samesignedadder, approx, noround, inputType, outputType, accType, df, tree_reduction, max_simultaneous_matmuls, tileRows, tileColumns)))
   val meshT = mesh.transpose
   def pipe[T <: Data](valid: Bool, t: T, latency: Int): T = {
     // The default "Pipe" function apparently resets the valid signals to false.B. We would like to avoid using global
@@ -69,8 +69,8 @@ class Mesh_sea_ws[T <: Data](samesignedadder: Boolean, approx: Boolean, noround:
     }
     meshT(c).foldLeft((zeros, io.in_valid(c))) {
       case ((in_b, valid), tile) =>
-        tile.io.in_b1.get := pipe(valid.head, in_b, tile_latency+1)
-        (tile.io.out_b1.get, tile.io.out_valid)
+        tile.io.in_b1:= pipe(valid.head, in_b, tile_latency+1)
+        (tile.io.out_b1, tile.io.out_valid)
     }
   }
 
@@ -132,7 +132,7 @@ class Mesh_sea_ws[T <: Data](samesignedadder: Boolean, approx: Boolean, noround:
     val fulladdition= if (!samesignedadder) { ShiftRegister(tile.io.out_b, output_delay) } else {
         val fulladdpartialout = VecInit(Seq.fill(tileColumns)(0.U.asTypeOf(outputType)))
         for (tc <- 0 until tileColumns) {
-          fulladdpartialout(tc) := tile.io.out_b(tc).asTypeOf(outputType) + tile.io.out_b1.get(tc).asTypeOf(outputType)
+          fulladdpartialout(tc) := tile.io.out_b(tc).asTypeOf(outputType) + tile.io.out_b1(tc).asTypeOf(outputType)
         }
       ShiftRegister(fulladdpartialout, output_delay)
     }

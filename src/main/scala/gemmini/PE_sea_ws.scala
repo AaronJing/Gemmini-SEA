@@ -72,19 +72,10 @@ class PE_sea_ws[T <: Data](samesignedadder: Boolean, approx: Boolean, noround: B
   val COMPUTE = 0.U(1.W)
   val PROPAGATE = 1.U(1.W)
 
-  def muladd(a: T, b: T, c: T, approx: Boolean = false) = {
-    val result = if (approx) {
-      a.approxMac(b, c.asTypeOf(inputType))
-    } else {
-      a.mac(b, c.asTypeOf(inputType))
-    }
-
-    result
-  }
 
   io.bad_dataflow := false.B
   // for weight stationary it is b+a*c 
-  val b1 = io.in_b1.get
+  val b1 = io.in_b1
   val mul_sign = a.isNeg ^ Mux(prop===PROPAGATE, c2.asTypeOf(inputType), c1.asTypeOf(inputType)).isNeg
   val NotSameSign = b.isNeg ^ mul_sign
   // swapping
@@ -92,9 +83,9 @@ class PE_sea_ws[T <: Data](samesignedadder: Boolean, approx: Boolean, noround: B
 
   // assert(b.isNeg =/= ~b1.isNeg)
   val op2 = Mux(NotSameSign, b1, b) 
-  val mac_result = op2.newMac(approx, noround, samesignedadder, a, Mux(prop===PROPAGATE, c2.asTypeOf(inputType), c1.asTypeOf(inputType)))
-  io.out_b1.get := Mux(NotSameSign, b, b1)
-  val out_b1 = io.out_b1.get
+  val mac_result = op2.seaMac(approx, noround, samesignedadder, a, Mux(prop===PROPAGATE, c2.asTypeOf(inputType), c1.asTypeOf(inputType)))
+  io.out_b1 := Mux(NotSameSign, b, b1)
+  val out_b1 = io.out_b1
   io.out_b := mac_result
   when(prop === PROPAGATE) {
     io.out_c := c1

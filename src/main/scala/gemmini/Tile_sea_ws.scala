@@ -62,15 +62,12 @@ class Tile_sea_ws[T <: Data](samesignedadder: Boolean, approx: Boolean, noround:
         pe.io.out_b
     }
   }
-  if (samesignedadder){
-    for (c <- 0 until columns) {
-      tileT(c).foldLeft(io.in_b1.get(c)) {
-        case (in_b1, pe) =>
-          pe.io.in_b1.get := (if (tree_reduction) in_b1.zero else in_b1)
-          pe.io.out_b1.get
-      }
+  for (c <- 0 until columns) {
+    tileT(c).foldLeft(io.in_b1(c)) {
+      case (in_b1, pe) =>
+        pe.io.in_b1 := (if (tree_reduction) in_b1.zero else in_b1)
+        pe.io.out_b1
     }
-  
   }
 
   // Broadcast 'd' vertically across the Tile
@@ -134,11 +131,11 @@ class Tile_sea_ws[T <: Data](samesignedadder: Boolean, approx: Boolean, noround:
         tile(rows - 1)(c).io.out_b
       }
     }
-    io.out_b1.get(c) := {
+    io.out_b1(c) := {
       if (!tree_reduction) {
-        tile(rows - 1)(c).io.out_b1.get
+        tile(rows - 1)(c).io.out_b1
       } else {
-        tile(rows - 1)(c).io.out_b1.get 
+        tile(rows - 1)(c).io.out_b1
       }
     }
   }

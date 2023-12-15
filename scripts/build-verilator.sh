@@ -29,5 +29,5 @@ if [ $show_help -eq 1 ]; then
 fi
 
 cd ../../sims/verilator/
-make ${debug} CONFIG=CustomGemminiSoCConfig
+make -j$(nproc) VERILATOR_THREADS=$(nproc) ${debug} CONFIG=CustomGemminiSoCConfig
 

@@ -14,7 +14,7 @@ class FPadder(expWidth: Int, mntWidth: Int, no_round: Boolean, unsigned: Boolean
   })
     val MAXEXP = ((1 << expWidth) - 1).U
     val p = mntWidth +1
-    val adderFrontend = if (!unsigned) Module(new fullFPadder(expWidth, mntWidth, no_round)) else Module(new unsignedFPadder(expWidth, mntWidth, no_round))
+    val adderFrontend = if (!unsigned) Module(new fullFPadder(expWidth, mntWidth, no_round)) else Module(new samesignedFPadder(expWidth, mntWidth, no_round))
     val o_exp3 = Wire(UInt(expWidth.W))
     val normalized_norm_sum_rounding = Wire(UInt(p.W))
     if (!no_round) {
