@@ -26,6 +26,12 @@ object GemminiConfigs {
 
     spatialArrayOutputType = SInt(20.W),
 
+    // sea options
+    sea = false,
+    samesigned = false,
+    approxMul = false,
+    no_round = false,
+
     // Spatial array size options
     tileRows = 1,
     tileColumns = 1,

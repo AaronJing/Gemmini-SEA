@@ -28,6 +28,11 @@ case class GemminiArrayConfig[T <: Data : Arithmetic, U <: Data, V <: Data](
                                                                              meshRows: Int = 16,
                                                                              meshColumns: Int = 16,
 
+                                                                             sea: Boolean = false,
+                                                                             samesigned: Boolean =  false,
+                                                                             approxMul: Boolean =  false,
+                                                                             no_round: Boolean = false,
+
                                                                              ld_queue_length: Int = 8,
                                                                              st_queue_length: Int = 2,
                                                                              ex_queue_length: Int = 8,

@@ -21,21 +21,7 @@ class Mesh_sea_ws[T <: Data](samesignedadder: Boolean, approx: Boolean, noround:
                                    val tileRows: Int, val tileColumns: Int,
                                    val meshRows: Int, val meshColumns: Int) (implicit ev: Arithmetic[T]) extends Module {
   import ev._
-  val io = IO(new Bundle {
-    val in_a = Input(Vec(meshRows, Vec(tileRows, inputType)))
-    val in_b = Input(Vec(meshColumns, Vec(tileColumns, inputType)))
-    val in_d = Input(Vec(meshColumns, Vec(tileColumns, inputType)))
-    val in_control = Input(Vec(meshColumns, Vec(tileColumns, new PEControl(accType))))
-    val in_id = Input(Vec(meshColumns, Vec(tileColumns, UInt(log2Up(max_simultaneous_matmuls).W)))) // The unique id of this particular matmul
-    val in_last = Input(Vec(meshColumns, Vec(tileColumns, Bool())))
-    val out_b = Output(Vec(meshColumns, Vec(tileColumns, outputType)))
-    val out_c = Output(Vec(meshColumns, Vec(tileColumns, outputType)))
-    val in_valid = Input(Vec(meshColumns, Vec(tileColumns, Bool())))
-    val out_valid = Output(Vec(meshColumns, Vec(tileColumns, Bool())))
-    val out_control = Output(Vec(meshColumns, Vec(tileColumns, new PEControl(accType))))
-    val out_id = Output(Vec(meshColumns, Vec(tileColumns, UInt(log2Up(max_simultaneous_matmuls).W))))
-    val out_last = Output(Vec(meshColumns, Vec(tileColumns, Bool())))
-  })
+  val io = IO(new Mesh_Intf(inputType, outputType, accType, max_simultaneous_matmuls, tileRows, tileColumns, meshRows, meshColumns)) 
 
   val mesh: Seq[Seq[Tile_sea_ws[T]]] = Seq.fill(meshRows, meshColumns)(Module(new Tile_sea_ws(samesignedadder, approx, noround, inputType, outputType, accType, df, tree_reduction, max_simultaneous_matmuls, tileRows, tileColumns)))
   val meshT = mesh.transpose

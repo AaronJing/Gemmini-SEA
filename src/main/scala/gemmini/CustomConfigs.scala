@@ -28,6 +28,11 @@ object GemminiCustomConfigs {
   )
 
   val trainingConfig = defaultFpConfig.copy(
+    sea = false,
+    samesigned = false,
+    approxMul = false,
+    no_round = false,
+
     inputType = Float(expWidth = 8, sigWidth = 24),
     accType = Float(expWidth = 8, sigWidth = 24),
 

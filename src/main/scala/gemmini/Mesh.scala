@@ -14,12 +14,11 @@ import chisel3.experimental._
   * @param meshRows
   * @param meshColumns
   */
-class Mesh[T <: Data : Arithmetic](inputType: T, outputType: T, accType: T,
-                                   df: Dataflow.Value, tree_reduction: Boolean, tile_latency: Int,
-                                   max_simultaneous_matmuls: Int, output_delay: Int,
+class Mesh_Intf[T <: Data : Arithmetic] (inputType: T, outputType: T, accType: T,
+                                   max_simultaneous_matmuls: Int, 
                                    val tileRows: Int, val tileColumns: Int,
-                                   val meshRows: Int, val meshColumns: Int) extends Module {
-  val io = IO(new Bundle {
+                                   val meshRows: Int, val meshColumns: Int) extends Bundle {
+
     val in_a = Input(Vec(meshRows, Vec(tileRows, inputType)))
     val in_b = Input(Vec(meshColumns, Vec(tileColumns, inputType)))
     val in_d = Input(Vec(meshColumns, Vec(tileColumns, inputType)))
@@ -33,7 +32,13 @@ class Mesh[T <: Data : Arithmetic](inputType: T, outputType: T, accType: T,
     val out_control = Output(Vec(meshColumns, Vec(tileColumns, new PEControl(accType))))
     val out_id = Output(Vec(meshColumns, Vec(tileColumns, UInt(log2Up(max_simultaneous_matmuls).W))))
     val out_last = Output(Vec(meshColumns, Vec(tileColumns, Bool())))
-  })
+}
+class Mesh[T <: Data : Arithmetic](inputType: T, outputType: T, accType: T,
+                                   df: Dataflow.Value, tree_reduction: Boolean, tile_latency: Int,
+                                   max_simultaneous_matmuls: Int, output_delay: Int,
+                                   val tileRows: Int, val tileColumns: Int,
+                                   val meshRows: Int, val meshColumns: Int) extends Module {
+  val io = IO(new Mesh_Intf(inputType, outputType, accType, max_simultaneous_matmuls, tileRows, tileColumns, meshRows, meshColumns)) 
 
   // mesh(r)(c) => Tile at row r, column c
   val mesh: Seq[Seq[Tile[T]]] = Seq.fill(meshRows, meshColumns)(Module(new Tile(inputType, outputType, accType, df, tree_reduction, max_simultaneous_matmuls, tileRows, tileColumns)))
