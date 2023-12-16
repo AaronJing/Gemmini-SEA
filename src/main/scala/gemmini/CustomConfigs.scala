@@ -30,7 +30,7 @@ object GemminiCustomConfigs {
   val trainingConfig = defaultFpConfig.copy(
     sea = false,
     samesigned = false,
-    approxMul = false,
+    approxmul = false,
     no_round = false,
 
     inputType = Float(expWidth = 8, sigWidth = 24),
@@ -47,7 +47,7 @@ object GemminiCustomConfigs {
   )
 
   // Specify which of your custom configs you want to build here
-  val customConfig = baselineInferenceConfig
+  val customConfig = trainingConfig
 }
 
 

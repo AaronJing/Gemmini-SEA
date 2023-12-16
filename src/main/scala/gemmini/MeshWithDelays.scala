@@ -33,8 +33,9 @@ class MeshWithDelays[T <: Data: Arithmetic, U <: TagQueueTag with Data]
   (inputType: T, val outputType: T, accType: T,
    tagType: U, df: Dataflow.Value, tree_reduction: Boolean, tile_latency: Int, output_delay: Int,
    tileRows: Int, tileColumns: Int, meshRows: Int, meshColumns: Int,
-   leftBanks: Int, upBanks: Int, outBanks: Int = 1, n_simultaneous_matmuls: Int = -1,
-  sea: Boolean, samesigned: Boolean, approxmul: Boolean, no_round: Boolean 
+   leftBanks: Int, upBanks: Int, 
+  sea: Boolean = false, samesigned: Boolean = false, approxmul: Boolean = false, no_round: Boolean = false, 
+   outBanks: Int = 1, n_simultaneous_matmuls: Int = -1
    )
   extends Module {
 
@@ -175,35 +176,35 @@ else Module(new Mesh_sea_ws(samesigned, approxmul, no_round, inputType, outputTy
   val d_shifter_in = WireInit(Mux(d_is_from_transposer,
     VecInit(transposer_out.flatten.reverse.grouped(tileRows).map(VecInit(_)).toSeq).asTypeOf(D_TYPE), d_buf))
 
-  mesh.io.in_a := shifted(a_shifter_in, leftBanks)
-  mesh.io.in_b := shifted(b_shifter_in, upBanks)
-  mesh.io.in_d := shifted(d_shifter_in, upBanks)
+  mesh.in_a := shifted(a_shifter_in, leftBanks)
+  mesh.in_b := shifted(b_shifter_in, upBanks)
+  mesh.in_d := shifted(d_shifter_in, upBanks)
 
-  mesh.io.in_control.zipWithIndex.foreach { case (ss, i) =>
+  mesh.in_control.zipWithIndex.foreach { case (ss, i) =>
     ss.foreach(_.dataflow := ShiftRegister(req.bits.pe_control.dataflow, i * (tile_latency + 1)))
     ss.foreach(_.propagate := ShiftRegister(in_prop, i * (tile_latency + 1)))
   }
   val result_shift = RegNext(req.bits.pe_control.shift) // TODO will this arrive at the right time if memory isn't pipelined?
-  mesh.io.in_control.zipWithIndex.foreach { case (ctrl, i) =>
+  mesh.in_control.zipWithIndex.foreach { case (ctrl, i) =>
     ctrl.foreach(_.shift := ShiftRegister(result_shift, i * (tile_latency + 1)))
   }
 
   val not_paused_vec = VecInit(Seq.fill(meshColumns)(VecInit(Seq.fill(tileColumns)(!pause))))
-  mesh.io.in_valid := shifted(not_paused_vec, upBanks)
+  mesh.in_valid := shifted(not_paused_vec, upBanks)
 
   val matmul_id_vec = VecInit(Seq.fill(meshColumns)(VecInit(Seq.fill(tileColumns)(matmul_id))))
-  mesh.io.in_id := shifted(matmul_id_vec, upBanks)
+  mesh.in_id := shifted(matmul_id_vec, upBanks)
 
   val matmul_last_vec = VecInit(Seq.fill(meshColumns)(VecInit(Seq.fill(tileColumns)(last_fire))))
-  mesh.io.in_last := shifted(matmul_last_vec, upBanks)
+  mesh.in_last := shifted(matmul_last_vec, upBanks)
 
   // We want to output C when we're output-stationary, but B when we're weight-stationary
   // TODO these would actually overlap when we switch from output-stationary to weight-stationary
-  io.resp.bits.data := shifted(Mux(mesh.io.out_control(0)(0).dataflow === Dataflow.OS.id.U, mesh.io.out_c, mesh.io.out_b), outBanks, true)
+  io.resp.bits.data := shifted(Mux(mesh.out_control(0)(0).dataflow === Dataflow.OS.id.U, mesh.out_c, mesh.out_b), outBanks, true)
 
-  io.resp.valid := shifted(mesh.io.out_valid, outBanks, reverse = true)(0)(0)
+  io.resp.valid := shifted(mesh.out_valid, outBanks, reverse = true)(0)(0)
 
-  val out_last = shifted(mesh.io.out_last, outBanks, reverse = true)(0)(0)
+  val out_last = shifted(mesh.out_last, outBanks, reverse = true)(0)(0)
   io.resp.bits.last := out_last
 
   // Tags
@@ -232,7 +233,7 @@ else Module(new Mesh_sea_ws(samesigned, approxmul, no_round, inputType, outputTy
   tag_garbage := DontCare
   tag_garbage.make_this_garbage()
 
-  val out_matmul_id = WireInit(shifted(mesh.io.out_id, outBanks, reverse = true)(0)(0))
+  val out_matmul_id = WireInit(shifted(mesh.out_id, outBanks, reverse = true)(0)(0))
   io.resp.bits.tag := Mux(tagq.io.deq.valid && out_matmul_id === tagq.io.deq.bits.id, tagq.io.deq.bits.tag, tag_garbage)
 
   dontTouch(out_matmul_id)

@@ -29,7 +29,7 @@ object GemminiConfigs {
     // sea options
     sea = false,
     samesigned = false,
-    approxMul = false,
+    approxmul = false,
     no_round = false,
 
     // Spatial array size options

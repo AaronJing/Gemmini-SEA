@@ -30,7 +30,7 @@ case class GemminiArrayConfig[T <: Data : Arithmetic, U <: Data, V <: Data](
 
                                                                              sea: Boolean = false,
                                                                              samesigned: Boolean =  false,
-                                                                             approxMul: Boolean =  false,
+                                                                             approxmul: Boolean =  false,
                                                                              no_round: Boolean = false,
 
                                                                              ld_queue_length: Int = 8,

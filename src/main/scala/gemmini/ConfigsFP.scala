@@ -18,7 +18,7 @@ object GemminiFPConfigs {
     // sea options
     sea = false,
     samesigned = false,
-    approxMul = false,
+    approxmul = false,
     no_round = false,
 
     opcodes = OpcodeSet.custom3,
