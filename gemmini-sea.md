@@ -26,12 +26,11 @@ Note the blue FP adder in PE is the generic FP adder.
 </p>
 
 In our SEA-based systolic array, we focus on separately accumulating quantities with the same sign. This means we're dealing with two different kinds of partial sums, labeled as $d$ and $d'$, which each PE handles and moves along. These partial sums have opposite signs and flow from top to bottom in the array. As shown in our diagram, every PE has two partial sums inputs $d$ and $d'$, and two pipeline registers help pass these along. At the very bottom of the array, we place a generic FP adder to wrap up by adding $d$ and $d'$ together. An initialization setup at the top of systolic array to make sure the first row of PEs starts with two inputs 
-\[
-\{d, d'\} = \left \{   \begin{array}{ll}
-     \{\text{partial sum}, 0\} & \text{if } \text{partial sum} \leq 0 \\
-     \{\text{partial sum}, -0\} & \text{otherwise}
-\end{array} \right.
-\]
+
+<p float="left">
+  <img src="img/equation_ws.png" alt="Alt text for image 3" />
+
+</p>
 
 PEs take in two distinct partial sums ($d$ and $d'$) with opposing signs. Inside each PE, you'll find a multiplier, a register $b$, and a same-signed FP adder. A key part of this design is the swapping mechanism, made up of two multiplexers and an XOR gate. It makes sure that the partial sum being processed by the same-signed adder matches the sign of the product of the input activation and weight ($a × b$). The other partial sum doesn't change. So, you end up with an updated $d$ that's either $a × b + d$ or $a × b + d'$, depending on how the signs line up in the same-signed FP adder. There's also a bypass path for the partial sum that's not being used, which gets sent as the new $d'$ to the next PE down the line. This way, the $d'$ that gets passed on always has a different sign than the $a × b$ that's being processed.
 
