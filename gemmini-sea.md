@@ -35,3 +35,16 @@ In our SEA-based systolic array, we focus on separately accumulating quantities 
 PEs take in two distinct partial sums ($d$ and $d'$) with opposing signs. Inside each PE, you'll find a multiplier, a register $b$, and a same-signed FP adder. A key part of this design is the swapping mechanism, made up of two multiplexers and an XOR gate. It makes sure that the partial sum being processed by the same-signed adder matches the sign of the product of the input activation and weight ($a × b$). The other partial sum doesn't change. So, you end up with an updated $d$ that's either $a × b + d$ or $a × b + d'$, depending on how the signs line up in the same-signed FP adder. There's also a bypass path for the partial sum that's not being used, which gets sent as the new $d'$ to the next PE down the line. This way, the $d'$ that gets passed on always has a different sign than the $a × b$ that's being processed.
 
 This design does not introduce any approxmation, despite the little difference that come from FP operations not being associative. Even though it looks like we've upped the number of logic components and FP adders, our design actually leads to lower ADP, energy. Please check our paper for details.
+
+## Getting started
+
+### Dependecies
+
+Our implementation is based on [Gemmini V0.6.4](https://github.com/ucb-bar/gemmini/tree/v0.6.4).  
+
+Before using this repo, plase make sure you can succesuflly install original Chipyard && Gemmini in the above link. You can verify installation by
+```
+cd chipyard/generators/gemmini
+./scripts/run-verilator.sh template
+```
+It should give you the following output:
