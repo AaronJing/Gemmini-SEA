@@ -33,11 +33,12 @@ object GemminiCustomConfigs {
     approxmul = false,
     no_round = false,
 
-    inputType = Float(expWidth = 8, sigWidth = 24),
+    inputType = Float(expWidth = 8, sigWidth = 8),
+    spatialArrayOutputType = Float(expWidth = 8, sigWidth = 24),
     accType = Float(expWidth = 8, sigWidth = 24),
 
-    meshRows = 8,
-    meshColumns = 8,
+    meshRows = 4,
+    meshColumns = 4,
 
     has_training_convs = true,
     has_max_pool =  false,
