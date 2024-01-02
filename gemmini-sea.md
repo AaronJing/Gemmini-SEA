@@ -58,7 +58,7 @@ git submodule update
 
 cd -
 cd toolchains/esp-tools/riscv-isa-sim/build
-git fetch && git checkout 090e82c473fd28b4eb2011ffcd771ead6076faab
+git fetch && git checkout sea
 make && make install
 ```
 
@@ -74,3 +74,28 @@ cd -
 ./scripts/run-verilator.sh template
 ```
 You should expect some output without any errors.
+
+### Running Baremetal test using Verilator
+
+You can generate SEA-based implementation by modifying `configs/GemminiCustomConfigs.scala`
+```
+sea = true,
+samesigned = true,
+```
+Or generate original implementation 
+```
+sea = false,
+samesigned = false,
+```
+
+Then, run Baremetal test `matmul_ws_sea`. Note that the `inputType`, `spatialArrayOutputType` and `accType` of `matmul_ws_sea` are BF16, FP32 and FP32, respectively. If you generate gemmini with other data types, this test cannot be performed.
+
+`matmul_ws_sea` contains 100 GEMM tests, each test contains two BF16 4-by-4 matrices and outputs one 4-by-4 matrix.
+
+```
+./scripts/build-verilator.sh
+cd software/gemmini-rocc-tests
+./build.sh
+cd -
+./scripts/run-verilator.sh matmul_ws_sea
+```
