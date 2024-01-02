@@ -1,8 +1,6 @@
 # Gemmini-SEA
 The Gemmini-SEA represents features a Sign-Separated Accumulation (SEA)-based weight stationary systolic array implementation. This design is strategically focused on enhancing the resource efficiency of floating-point (FP) addition operations, which are crucial in DNN training accelerators. Unlike traditional accumulation, the Gemmini-SEA architecture innovatively accumulates same-signed terms separately using efficient same-signed FP adders, followed by a final addition of oppositely-signed sub-accumulations. This approach not only leads to a substantial improvement in overall resource efficiency but also maintains accuracy by not introducing approximations or modifications in the rounding mechanism.
 
-# TEST
-
 ## Design Overview
 
 
@@ -44,9 +42,35 @@ This design does not introduce any approxmation, despite the little difference t
 
 Our implementation is based on [Gemmini V0.6.4](https://github.com/ucb-bar/gemmini/tree/v0.6.4).  
 
-Before using this repo, plase make sure you can succesuflly install original Chipyard && Gemmini in the above link. You can verify installation by
+### Installation
+
 ```
-cd chipyard/generators/gemmini
+git clone git@github.com:AaronJing/Chipyard-SEA.git
+cd Chipyard-SEA
+git checkout sea
+./scripts/init-submodules-no-riscv-tools.sh
+./scripts/build-toolchains.sh esp-tools
+source env.sh
+
+cd generators/gemmini
+git fetch && git checkout sea
+git submodule update
+
+cd -
+cd toolchains/esp-tools/riscv-isa-sim/build
+git fetch && git checkout 090e82c473fd28b4eb2011ffcd771ead6076faab
+make && make install
+```
+
+### Verify Installation
+
+```
+cd Chipyard-SEA/generators/gemmini
+./scripts/setup-paths.sh
+./scripts/build-verilator.sh
+cd software/gemmini-rocc-tests
+./build.sh
+cd -
 ./scripts/run-verilator.sh template
 ```
-It should give you the following output:
+You should expect some output without any errors.
